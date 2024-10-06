@@ -1,0 +1,30 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id                 String      @id @unique @default(uuid())
+    wallet             String      @unique
+    name               String
+    challengesCreated  Challenge[] @relation("InitiatedChallenges")
+    challengesReceived Challenge[] @relation("ReceivedChallenges")
+    createdAt          DateTime    @default(now())
+}
+
+model Challenge {
+    id           String    @id @unique @default(uuid())
+    initiatorId  String
+    initiator    User      @relation("InitiatedChallenges", fields: [initiatorId], references: [id])
+    challengerId String?
+    challenger   User?     @relation("ReceivedChallenges", fields: [challengerId], references: [id])
+    statements   String[]
+    lieIndex     Int
+    guessIndex   Int?
+    createdAt    DateTime  @default(now())
+    completedAt  DateTime?
+}
