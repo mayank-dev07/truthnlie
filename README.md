@@ -1,36 +1,26 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TruthNLie 🎯
 
-## Getting Started
+**TruthNLie** is a fun, competitive, blockchain-based guessing game built on **Solana** using Blinks. It’s a simple 1v1 game where one player creates a challenge by providing two truths and one lie. The challenge is shared with a friend, who must guess which of the statements is the lie. The game is decentralized, with players signing transactions to initiate and participate in challenges, while rewards are paid out based on the result.
 
-First, run the development server:
+## Key Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **1v1 Challenges**: A player creates a challenge consisting of two truths and one lie. The statements are shuffled and sent to the opponent, who has to guess the lie.
+- **Blockchain-Powered**: Built on the Solana blockchain, all transactions are recorded on-chain. Players must sign transactions to initiate challenges and make guesses.
+- **Native SOL Rewards**: Players wager a small amount of SOL to start a game. If the guesser identifies the lie correctly, they win the combined SOL amount. If not, the initiator takes the reward.
+- **Randomized Order**: To prevent pattern guessing, the order of the statements is randomized when shared with the opponent.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How It Works
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Create a Challenge**: One player (the initiator) creates a challenge by providing two truths and one lie. The statements are shuffled and stored in a randomized order, so the opponent cannot guess based on position.
+2. **Share the Challenge**: The initiator shares the challenge with their friend via a unique link or other methods. The friend (challenger) then makes a guess, trying to spot the lie.
+3. **Guess the Lie**: The challenger guesses which statement is the lie. They submit their guess by signing a transaction that pays a small SOL amount.
+4. **Winner Takes the Prize**: If the challenger guesses correctly, they win the combined SOL amount from both players. If they guess wrong, the initiator wins the reward.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Technologies Used
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Next.js** (Frontend)
+- **TypeScript**
+- **Prisma ORM** (Database Management)
+- **PostgreSQL** (Database)
+- **Solana Blockchain** (Transaction management, and SOL payments)
+- **Solana Web3.js** (For interacting with the Solana blockchain)
