@@ -1,45 +1,39 @@
-import { vaultPublicKey } from "@/lib/constants";
 import { createChallenge, createUserIfNotExists } from "@/lib/dbUtils";
 import {
   shuffleArray,
   validatedCreateChallengeQueryParams,
 } from "@/lib/helper";
 import {
-  ActionPostResponse,
-  createPostResponse,
-  ActionGetResponse,
-  ActionPostRequest,
   createActionHeaders,
   ActionError,
-  LinkedAction,
   CompletedAction,
   NextActionPostRequest,
 } from "@solana/actions";
-import {
-  clusterApiUrl,
-  Connection,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-} from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 
-// create the standard headers for this route (including CORS)
+// Create the standard headers for this route (including CORS)
 const headers = createActionHeaders();
 
+/**
+ * Handles GET requests.
+ * @param req - The request object.
+ * @returns A response indicating the method is not supported.
+ */
 export const GET = async (req: Request) => {
-  return Response.json(
-    { message: "Method not supported" },
-    {
-      headers,
-    }
-  );
+  return Response.json({ message: "Method not supported" }, { headers });
 };
 
-// DO NOT FORGET TO INCLUDE THE `OPTIONS` HTTP METHOD
-// THIS WILL ENSURE CORS WORKS FOR BLINKS
+/**
+ * Handles OPTIONS requests to ensure CORS works.
+ * @returns A response with the appropriate headers.
+ */
 export const OPTIONS = async () => Response.json(null, { headers });
 
+/**
+ * Handles POST requests to create a new challenge.
+ * @param req - The request object.
+ * @returns A response with the result of the challenge creation.
+ */
 export const POST = async (req: Request) => {
   try {
     const requestUrl = new URL(req.url);
@@ -47,7 +41,7 @@ export const POST = async (req: Request) => {
       validatedCreateChallengeQueryParams(requestUrl);
     const body: NextActionPostRequest = await req.json();
 
-    // validate the client provided input
+    // Validate the client-provided input
     let account: PublicKey;
     try {
       account = new PublicKey(body.account);
@@ -67,15 +61,18 @@ export const POST = async (req: Request) => {
       `Creating challenge with truth1: ${truth1}, truth2: ${truth2}, lie: ${lie}, competitors: ${competitors}, amount: ${amount} and signature: ${signature}, account: ${account.toBase58()}`
     );
 
+    // Create user if not exists
     try {
       await createUserIfNotExists(account.toBase58(), "User");
     } catch (err) {
       throw "Failed to create user";
     }
+
     const statements = [truth1, truth2, lie];
     const shuffledStatements = shuffleArray(statements);
     const lieIndex = shuffledStatements.indexOf(lie);
 
+    // Create challenge
     let challengeId: string;
     try {
       challengeId = await createChallenge(
@@ -97,9 +94,7 @@ export const POST = async (req: Request) => {
       label: "Challenge created",
     };
 
-    return Response.json(payload, {
-      headers,
-    });
+    return Response.json(payload, { headers });
   } catch (err) {
     console.error(err);
     let actionError: ActionError = { message: "An unknown error occurred" };

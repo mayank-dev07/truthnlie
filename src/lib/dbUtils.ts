@@ -1,5 +1,11 @@
 import { db } from "./db";
 
+/**
+ * Creates a user if they do not already exist.
+ * @param wallet - The wallet address of the user.
+ * @param name - The name of the user.
+ * @returns The existing or newly created user.
+ */
 export async function createUserIfNotExists(wallet: string, name: string) {
   const existingUser = await getUser(wallet);
 
@@ -15,6 +21,11 @@ export async function createUserIfNotExists(wallet: string, name: string) {
   });
 }
 
+/**
+ * Retrieves a user by their wallet address.
+ * @param wallet - The wallet address of the user.
+ * @returns The user if found, otherwise null.
+ */
 export async function getUser(wallet: string) {
   return db.user.findUnique({
     where: {
@@ -23,6 +34,15 @@ export async function getUser(wallet: string) {
   });
 }
 
+/**
+ * Creates a challenge with the specified parameters.
+ * @param wallet - The wallet address of the user creating the challenge.
+ * @param maxChallengers - The maximum number of challengers allowed.
+ * @param statements - An array of three statements.
+ * @param lieIndex - The index of the lie in the statements array.
+ * @returns The ID of the newly created challenge.
+ * @throws Will throw an error if the number of statements is not 3 or if the lieIndex is out of range.
+ */
 export async function createChallenge(
   wallet: string,
   maxChallengers: number,
@@ -56,6 +76,11 @@ export async function createChallenge(
   return challenge.id;
 }
 
+/**
+ * Retrieves a challenge by its ID.
+ * @param id - The ID of the challenge.
+ * @returns The challenge if found, otherwise null.
+ */
 export async function getChallenge(id: string) {
   return db.challenge.findUnique({
     where: {
@@ -64,6 +89,11 @@ export async function getChallenge(id: string) {
   });
 }
 
+/**
+ * Retrieves all challenges created by a specific user.
+ * @param wallet - The wallet address of the user.
+ * @returns An array of challenges created by the user.
+ */
 export async function getChallenges(wallet: string) {
   return db.challenge.findMany({
     where: {
@@ -72,6 +102,11 @@ export async function getChallenges(wallet: string) {
   });
 }
 
+/**
+ * Retrieves all challenges where a specific user is a challenger.
+ * @param wallet - The wallet address of the challenger.
+ * @returns An array of challenges where the user is a challenger.
+ */
 export async function getChallengesByChallenger(wallet: string) {
   return db.challenge.findMany({
     where: {
@@ -84,6 +119,14 @@ export async function getChallengesByChallenger(wallet: string) {
   });
 }
 
+/**
+ * Adds a challenger to a challenge and updates their guess.
+ * @param challengeId - The ID of the challenge.
+ * @param wallet - The wallet address of the challenger.
+ * @param guessSignature - The signature of the guess.
+ * @param correct - Whether the guess was correct.
+ * @returns The updated challenge.
+ */
 export async function addChallenger(
   challengeId: string,
   wallet: string,

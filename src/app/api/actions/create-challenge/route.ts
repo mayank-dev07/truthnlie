@@ -18,9 +18,14 @@ import {
   Transaction,
 } from "@solana/web3.js";
 
-// create the standard headers for this route (including CORS)
+// Create the standard headers for this route (including CORS)
 const headers = createActionHeaders();
 
+/**
+ * Handles GET requests to provide metadata for creating a challenge.
+ * @param req - The incoming request object.
+ * @returns A JSON response containing action metadata.
+ */
 export const GET = async (req: Request) => {
   try {
     const requestUrl = new URL(req.url);
@@ -30,24 +35,9 @@ export const GET = async (req: Request) => {
         label: "Create Challenge",
         href: "/api/actions/create-challenge?truth1={truth1}&truth2={truth2}&lie={lie}&competitors={competitors}&amount={amount}",
         parameters: [
-          {
-            name: "truth1",
-            label: "Truth 1",
-            required: true,
-            type: "text",
-          },
-          {
-            name: "truth2",
-            label: "Truth 2",
-            required: true,
-            type: "text",
-          },
-          {
-            name: "lie",
-            label: "Lie",
-            required: true,
-            type: "text",
-          },
+          { name: "truth1", label: "Truth 1", required: true, type: "text" },
+          { name: "truth2", label: "Truth 2", required: true, type: "text" },
+          { name: "lie", label: "Lie", required: true, type: "text" },
           {
             name: "competitors",
             label: "Total Competitors",
@@ -68,30 +58,30 @@ export const GET = async (req: Request) => {
       title: "Truth N Lie",
       icon: new URL("/logo.png", requestUrl.origin).toString(),
       description:
-        "Create a new challenge for the 2 Truths and 1 Lie game. \nProvide two truths and one lie, and let you friend guess which one is the lie.",
+        "Create a new challenge for the 2 Truths and 1 Lie game. \nProvide two truths and one lie, and let your friend guess which one is the lie.",
       label: "Create Challenge",
-      links: {
-        actions,
-      },
+      links: { actions },
     };
-    return Response.json(payload, {
-      headers,
-    });
+    return Response.json(payload, { headers });
   } catch (err) {
-    console.log(err);
-    let actionError: ActionError = { message: "An unknown error occurred" };
-    if (typeof err == "string") actionError.message = err;
-    return Response.json(actionError, {
-      status: 400,
-      headers,
-    });
+    console.error(err);
+    const actionError: ActionError = { message: "An unknown error occurred" };
+    if (typeof err === "string") actionError.message = err;
+    return Response.json(actionError, { status: 400, headers });
   }
 };
 
-// DO NOT FORGET TO INCLUDE THE `OPTIONS` HTTP METHOD
-// THIS WILL ENSURE CORS WORKS FOR BLINKS
+/**
+ * Handles OPTIONS requests to ensure CORS works for blinks.
+ * @returns A JSON response with standard headers.
+ */
 export const OPTIONS = async () => Response.json(null, { headers });
 
+/**
+ * Handles POST requests to create a new challenge.
+ * @param req - The incoming request object.
+ * @returns A JSON response containing the transaction details.
+ */
 export const POST = async (req: Request) => {
   try {
     const requestUrl = new URL(req.url);
@@ -99,7 +89,7 @@ export const POST = async (req: Request) => {
       validatedCreateChallengeQueryParams(requestUrl);
     const body: ActionPostRequest = await req.json();
 
-    // validate the client provided input
+    // Validate the client-provided input
     let account: PublicKey;
     try {
       account = new PublicKey(body.account);
@@ -111,14 +101,14 @@ export const POST = async (req: Request) => {
       process.env.SOLANA_RPC! || clusterApiUrl("devnet")
     );
 
-    // create an instruction to transfer native SOL from one wallet to vault
+    // Create an instruction to transfer native SOL from one wallet to vault
     const transferSolInstruction = SystemProgram.transfer({
       fromPubkey: account,
       toPubkey: new PublicKey(vaultPublicKey),
       lamports: amount * LAMPORTS_PER_SOL,
     });
 
-    // get the latest blockhash amd block height
+    // Get the latest blockhash and block height
     const { blockhash, lastValidBlockHeight } =
       await connection.getLatestBlockhash();
 
@@ -142,16 +132,11 @@ export const POST = async (req: Request) => {
       },
     });
 
-    return Response.json(payload, {
-      headers,
-    });
+    return Response.json(payload, { headers });
   } catch (err) {
-    console.log(err);
-    let actionError: ActionError = { message: "An unknown error occurred" };
-    if (typeof err == "string") actionError.message = err;
-    return Response.json(actionError, {
-      status: 400,
-      headers,
-    });
+    console.error(err);
+    const actionError: ActionError = { message: "An unknown error occurred" };
+    if (typeof err === "string") actionError.message = err;
+    return Response.json(actionError, { status: 400, headers });
   }
 };
