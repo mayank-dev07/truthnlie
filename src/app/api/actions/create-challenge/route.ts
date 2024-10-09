@@ -1,3 +1,5 @@
+import { vaultPublicKey } from "@/lib/constants";
+import { validatedCreateChallengeQueryParams } from "@/lib/helper";
 import {
   ActionPostResponse,
   createPostResponse,
@@ -26,7 +28,7 @@ export const GET = async (req: Request) => {
       {
         type: "transaction",
         label: "Create Challenge",
-        href: "/api/actions/create-challenge?truth1={truth1}&truth2={truth2}&lie={lie}&amount={amount}",
+        href: "/api/actions/create-challenge?truth1={truth1}&truth2={truth2}&lie={lie}&competitors={competitors}&amount={amount}",
         parameters: [
           {
             name: "truth1",
@@ -45,6 +47,12 @@ export const GET = async (req: Request) => {
             label: "Lie",
             required: true,
             type: "text",
+          },
+          {
+            name: "competitors",
+            label: "Total Competitors",
+            required: true,
+            type: "number",
           },
           {
             name: "amount",
@@ -84,62 +92,66 @@ export const GET = async (req: Request) => {
 // THIS WILL ENSURE CORS WORKS FOR BLINKS
 export const OPTIONS = async () => Response.json(null, { headers });
 
-// export const POST = async (req: Request) => {
-//   try {
-//     const requestUrl = new URL(req.url);
-
-//     return Response.json(payload, {
-//       headers,
-//     });
-//   } catch (err) {
-//     console.log(err);
-//     let actionError: ActionError = { message: "An unknown error occurred" };
-//     if (typeof err == "string") actionError.message = err;
-//     return Response.json(actionError, {
-//       status: 400,
-//       headers,
-//     });
-//   }
-// };
-
-function validatedQueryParams(requestUrl: URL) {
-  let truth1: string;
-  let truth2: string;
-  let lie: string;
-  let amount: number;
-
+export const POST = async (req: Request) => {
   try {
-    truth1 = requestUrl.searchParams.get("truth1")!;
-    if (!truth1) throw "truth1 is required";
-  } catch (err) {
-    throw "Invalid input query parameter: truth1";
-  }
+    const requestUrl = new URL(req.url);
+    const { truth1, truth2, lie, competitors, amount } =
+      validatedCreateChallengeQueryParams(requestUrl);
+    const body: ActionPostRequest = await req.json();
 
-  try {
-    truth2 = requestUrl.searchParams.get("truth2")!;
-    if (!truth2) throw "truth2 is required";
-  } catch (err) {
-    throw "Invalid input query parameter: truth2";
-  }
+    // validate the client provided input
+    let account: PublicKey;
+    try {
+      account = new PublicKey(body.account);
+    } catch (err) {
+      throw 'Invalid "account" provided';
+    }
 
-  try {
-    lie = requestUrl.searchParams.get("lie")!;
-    if (!lie) throw "lie is required";
-  } catch (err) {
-    throw "Invalid input query parameter: lie";
-  }
+    const connection = new Connection(
+      process.env.SOLANA_RPC! || clusterApiUrl("devnet")
+    );
 
-  try {
-    amount = parseFloat(requestUrl.searchParams.get("amount")!);
-    if (isNaN(amount) || amount <= 0) throw "amount is too small";
-  } catch (err) {
-    throw "Invalid input query parameter: amount";
-  }
+    // create an instruction to transfer native SOL from one wallet to vault
+    const transferSolInstruction = SystemProgram.transfer({
+      fromPubkey: account,
+      toPubkey: new PublicKey(vaultPublicKey),
+      lamports: amount * LAMPORTS_PER_SOL,
+    });
 
-  return {
-    truth1,
-    truth2,
-    lie,
-    amount,
-  };
-}
+    // get the latest blockhash amd block height
+    const { blockhash, lastValidBlockHeight } =
+      await connection.getLatestBlockhash();
+
+    const transaction = new Transaction({
+      feePayer: account,
+      blockhash,
+      lastValidBlockHeight,
+    }).add(transferSolInstruction);
+
+    const payload: ActionPostResponse = await createPostResponse({
+      fields: {
+        type: "transaction",
+        transaction,
+        message: "Create Truth N Lie Challenge",
+        links: {
+          next: {
+            type: "post",
+            href: `/api/actions/create-challenge/next-action?truth1=${truth1}&truth2=${truth2}&lie=${lie}&amount=${amount}&competitors=${competitors}`,
+          },
+        },
+      },
+    });
+
+    return Response.json(payload, {
+      headers,
+    });
+  } catch (err) {
+    console.log(err);
+    let actionError: ActionError = { message: "An unknown error occurred" };
+    if (typeof err == "string") actionError.message = err;
+    return Response.json(actionError, {
+      status: 400,
+      headers,
+    });
+  }
+};
