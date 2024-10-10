@@ -69,6 +69,27 @@ export function validatedCreateChallengeQueryParams(requestUrl: URL) {
 }
 
 /**
+ * Validates and extracts the `challengeId` query parameter from the given URL.
+ *
+ * @param requestUrl - The URL object containing the query parameters.
+ * @returns An object containing the `challengeId`.
+ * @throws Will throw an error if the `challengeId` is missing or invalid.
+ */
+export function validatedChallengeQueryParams(requestUrl: URL) {
+  let challengeId: string;
+  try {
+    challengeId = requestUrl.searchParams.get("challengeId")!;
+    if (!challengeId) throw "challengeId is required";
+  } catch (err) {
+    throw "Invalid input query parameter: challengeId";
+  }
+
+  return {
+    challengeId,
+  };
+}
+
+/**
  * Shuffles an array of strings in place using the Fisher-Yates algorithm.
  *
  * @param array - The array of strings to shuffle.
