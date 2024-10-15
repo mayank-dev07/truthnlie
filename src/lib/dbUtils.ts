@@ -40,6 +40,8 @@ export async function getUser(wallet: string) {
  * @param maxChallengers - The maximum number of challengers allowed.
  * @param statements - An array of three statements.
  * @param lieIndex - The index of the lie in the statements array.
+ * @param totalAmount - The total amount to be bet on the challenge.
+ * @param createChallengeSig - The signature of the create challenge transaction.
  * @returns The ID of the newly created challenge.
  * @throws Will throw an error if the number of statements is not 3 or if the lieIndex is out of range.
  */
@@ -48,7 +50,8 @@ export async function createChallenge(
   maxChallengers: number,
   statements: string[],
   lieIndex: number,
-  totalAmount: number
+  totalAmount: number,
+  createChallengeSig: string
 ) {
   // validations
   if (statements.length !== 3) {
@@ -73,6 +76,7 @@ export async function createChallenge(
       statements,
       lieIndex,
       totalAmount,
+      createChallengeSig,
     },
   });
   return challenge.id;
@@ -167,7 +171,7 @@ export async function addChallenger(
           wallet,
         },
       },
-      [correct ? "correctGuesses" : "incorrectGuesses"]: {
+      [correct ? "correctGuessesSig" : "correctGuessesSig"]: {
         push: guessSignature,
       },
     },

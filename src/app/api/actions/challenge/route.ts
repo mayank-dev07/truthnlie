@@ -60,7 +60,7 @@ export const GET = async (req: Request) => {
     }
     const challenger = challenge.wallet;
     const totalCurrentChallengers =
-      challenge.correctGuesses.length + challenge.incorrectGuesses.length;
+      challenge.correctGuessesSig.length + challenge.incorrectGuessesSig.length;
     const availableChallengers =
       challenge.maxChallengers - totalCurrentChallengers;
     if (availableChallengers === 0) {
@@ -68,7 +68,7 @@ export const GET = async (req: Request) => {
       const completedAction: CompletedAction = {
         type: "completed",
         title: "Challenge Full",
-        description: `The challenge has already reached the maximum number of challengers.`,
+        description: `The challenge has already reached the maximum number of challengers. Results and rewards will be distributed soon.`,
         icon: new URL("/logo.png", requestUrl.origin).toString(),
         disabled: true,
         label: "Challenge Full",
@@ -80,7 +80,9 @@ export const GET = async (req: Request) => {
       const completedAction: CompletedAction = {
         type: "completed",
         title: "Challenge Already Completed",
-        description: `The challenge has already been completed.`,
+        description: `The challenge has already been completed.\nWinners: ${challenge.correctGuessesSig.join(
+          ", "
+        )}`,
         icon: new URL("/logo.png", requestUrl.origin).toString(),
         disabled: true,
         label: "Challenge Completed",

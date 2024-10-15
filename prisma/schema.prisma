@@ -17,16 +17,17 @@ model User {
 }
 
 model Challenge {
-    id               String    @id @unique @default(uuid())
-    wallet           String
-    initiator        User      @relation("InitiatedChallenges", fields: [wallet], references: [wallet])
-    maxChallengers   Int
-    challengers      User[]    @relation("ReceivedChallenges")
-    statements       String[]
-    lieIndex         Int
-    totalAmount      Float
-    correctGuesses   String[]  @default([])
-    incorrectGuesses String[]  @default([])
-    createdAt        DateTime  @default(now())
-    completedAt      DateTime?
+    id                  String    @id @unique @default(uuid())
+    wallet              String
+    initiator           User      @relation("InitiatedChallenges", fields: [wallet], references: [wallet])
+    maxChallengers      Int
+    challengers         User[]    @relation("ReceivedChallenges")
+    statements          String[]
+    lieIndex            Int
+    totalAmount         Float
+    createChallengeSig  String
+    correctGuessesSig   String[]  @default([])
+    incorrectGuessesSig String[]  @default([])
+    createdAt           DateTime  @default(now())
+    completedAt         DateTime?
 }

@@ -80,7 +80,8 @@ export const POST = async (req: Request) => {
         competitors,
         shuffledStatements,
         lieIndex,
-        amount
+        amount,
+        signature
       );
     } catch (err) {
       console.error(err);
