@@ -63,7 +63,18 @@ export const GET = async (req: Request) => {
       challenge.correctGuesses.length + challenge.incorrectGuesses.length;
     const availableChallengers =
       challenge.maxChallengers - totalCurrentChallengers;
-
+    if (availableChallengers === 0) {
+      // just say that challenge is already completed
+      const completedAction: CompletedAction = {
+        type: "completed",
+        title: "Challenge Full",
+        description: `The challenge has already reached the maximum number of challengers.`,
+        icon: new URL("/logo.png", requestUrl.origin).toString(),
+        disabled: true,
+        label: "Challenge Full",
+      };
+      return Response.json(completedAction, { headers });
+    }
     if (challenge.completedAt !== null) {
       // just say that challenge is already completed
       const completedAction: CompletedAction = {
