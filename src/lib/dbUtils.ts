@@ -177,3 +177,14 @@ export async function addChallenger(
     },
   });
 }
+
+export function markChallengeAsComplete(challengeId: string) {
+  return db.challenge.update({
+    where: {
+      id: challengeId,
+    },
+    data: {
+      completedAt: new Date(),
+    },
+  });
+}

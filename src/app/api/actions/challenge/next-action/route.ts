@@ -1,4 +1,8 @@
-import { addChallenger, getChallenge } from "@/lib/dbUtils";
+import {
+  addChallenger,
+  getChallenge,
+  markChallengeAsComplete,
+} from "@/lib/dbUtils";
 import { validatedPOSTChallengeQueryParams } from "@/lib/helper";
 import { sendPayouts } from "@/lib/payout.helper";
 import {
@@ -100,11 +104,12 @@ export const POST = async (req: Request) => {
           1
       ) {
         console.log("Sending Payouts");
-        
+
         // Run sendPayouts asynchronously in the background
         sendPayouts(challengeId)
           .then(() => {
             console.log("Payouts sent successfully");
+            markChallengeAsComplete(challengeId);
           })
           .catch((err) => {
             console.error("Error sending payouts:", err);
