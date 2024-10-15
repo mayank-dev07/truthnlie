@@ -91,7 +91,7 @@ export const POST = async (req: Request) => {
     const payload: CompletedAction = {
       type: "completed",
       title: "Challenge created",
-      description: `Your challenge has been created successfully\n URL: https://dial.to/developer?url=${requestUrl.origin}/challenge?challengeId=${challengeId}`,
+      description: `Your challenge has been created successfully\n URL: https://dial.to/?action=solana-action:${requestUrl.origin}/api/actions/challenge?challengeId=${challengeId}&cluster=devnet`,
       icon: new URL("/logo.png", requestUrl.origin).toString(),
       label: "Challenge created",
     };
