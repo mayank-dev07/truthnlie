@@ -31,3 +31,17 @@ model Challenge {
     createdAt           DateTime  @default(now())
     completedAt         DateTime?
 }
+
+model Transaction {
+    TxID        Int      @id @default(autoincrement())
+    challengeId String
+    TxHash      String
+    ToUser      String
+    FromUser    String
+    TokenAmount Float
+    Token       String
+    TxState     String
+    Timestamp   Int
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+}

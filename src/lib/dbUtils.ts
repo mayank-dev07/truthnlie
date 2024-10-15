@@ -188,3 +188,40 @@ export function markChallengeAsComplete(challengeId: string) {
     },
   });
 }
+
+export function initTransaction(
+  challengeId: string,
+  sender: string,
+  receiver: string,
+  amount: number
+) {
+  return db.transaction.create({
+    data: {
+      challengeId,
+      ToUser: sender,
+      TxHash: "",
+      FromUser: receiver,
+      TokenAmount: amount,
+      Token: "SOL",
+      TxState: "Pending",
+      Timestamp: 0,
+    },
+  });
+}
+
+export function updateTransaction(
+  txid: number,
+  txHash: string,
+  timestamp: number
+) {
+  return db.transaction.update({
+    where: {
+      TxID: txid,
+    },
+    data: {
+      TxHash: txHash,
+      TxState: "Confirmed",
+      Timestamp: timestamp,
+    },
+  });
+}

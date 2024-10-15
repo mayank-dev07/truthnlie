@@ -10,7 +10,7 @@ import {
 } from "@solana/web3.js";
 
 import wallet from "../../keys/AkS5coPHbYjv5k9ZvDucWodQhPmn2f9NjRzoTBQjABGh.json";
-import { getChallenge } from "./dbUtils";
+import { getChallenge, initTransaction, updateTransaction } from "./dbUtils";
 import { platformFee } from "./constants";
 
 export async function getTransactionDetails(signature: string) {
@@ -78,8 +78,15 @@ export async function getTransactionDetails(signature: string) {
 async function transferSol(
   sender: Keypair,
   receiver: PublicKey,
-  amount: number
+  amount: number,
+  challengeId: string
 ) {
+  const txid = await initTransaction(
+    challengeId,
+    sender.publicKey.toString(),
+    receiver.toString(),
+    amount
+  ).then((res) => res.TxID);
   // Connect to Solana cluster
   const connection = new Connection(clusterApiUrl("devnet"));
 
@@ -123,6 +130,16 @@ async function transferSol(
   const signature = await sendAndConfirmTransaction(connection, transaction, [
     sender,
   ]);
+
+  const tx = await connection.getTransaction(signature);
+
+  const timestamp = tx?.blockTime || 0;
+
+  await updateTransaction(txid, signature, timestamp);
+  console.log(
+    `Transfer instruction successful.\nSender:${sender.publicKey.toString()}\nReceiver:${receiver.toString()}\nAmount:${amount}\nSignature:${signature}`
+  );
+  return signature;
   console.log(
     `Transfer instruction successful.\nSender:${sender.publicKey.toString()}\nReceiver:${receiver.toString()}\nAmount:${amount}\nSignature:${signature}`
   );
@@ -131,11 +148,12 @@ async function transferSol(
 
 export async function transferSolWithKeypair(
   receiver: PublicKey,
-  amount: number
+  amount: number,
+  challengeId: string
 ) {
   const sender = Keypair.fromSecretKey(new Uint8Array(wallet));
 
-  return transferSol(sender, receiver, amount);
+  return transferSol(sender, receiver, amount, challengeId);
 }
 
 export async function sendPayouts(challengeId: string) {
@@ -173,7 +191,8 @@ export async function sendPayouts(challengeId: string) {
         (challenge.totalAmount / challenge.maxChallengers) * (1 - platformFee);
       return await transferSolWithKeypair(
         new PublicKey(challenge.wallet),
-        transferAmount
+        transferAmount,
+        challengeId
       );
     }
 
@@ -181,7 +200,11 @@ export async function sendPayouts(challengeId: string) {
     console.log(
       `Sending ${transferAmount} to winner ${sender} for challenge ${challengeId}`
     );
-    return await transferSolWithKeypair(new PublicKey(sender), transferAmount);
+    return await transferSolWithKeypair(
+      new PublicKey(sender),
+      transferAmount,
+      challengeId
+    );
   }
 
   for (const loserSig of challenge?.correctGuessesSig) {
@@ -194,7 +217,8 @@ export async function sendPayouts(challengeId: string) {
         (challenge.totalAmount / challenge.maxChallengers) * (1 - platformFee);
       return await transferSolWithKeypair(
         new PublicKey(challenge.wallet),
-        transferAmount
+        transferAmount,
+        challengeId
       );
     }
     const transferAmount = amount * 2 * (1 - platformFee);
@@ -203,7 +227,8 @@ export async function sendPayouts(challengeId: string) {
     );
     return await transferSolWithKeypair(
       new PublicKey(challenge.wallet),
-      transferAmount
+      transferAmount,
+      challengeId
     );
   }
 }
