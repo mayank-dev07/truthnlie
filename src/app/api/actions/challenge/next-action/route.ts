@@ -1,8 +1,5 @@
-import { createChallenge, createUserIfNotExists } from "@/lib/dbUtils";
-import {
-  shuffleArray,
-  validatedCreateChallengeQueryParams,
-} from "@/lib/helper";
+import { addChallenger, getChallenge } from "@/lib/dbUtils";
+import { validatedPOSTChallengeQueryParams } from "@/lib/helper";
 import {
   createActionHeaders,
   ActionError,
@@ -34,11 +31,29 @@ export const OPTIONS = async () => Response.json(null, { headers });
  * @param req - The request object.
  * @returns A response with the result of the challenge creation.
  */
+/**
+ * Handles the POST request for the next action in a challenge.
+ *
+ * @param req - The incoming request object.
+ * @returns A response object containing the result of the action.
+ *
+ * @throws Will throw an error if the provided "account" or "signature" is invalid.
+ * @throws Will throw an error if fetching the challenge fails.
+ * @throws Will throw an error if adding the challenger fails.
+ *
+ * The function performs the following steps:
+ * 1. Validates the query parameters from the request URL.
+ * 2. Parses and validates the request body.
+ * 3. Fetches the challenge based on the provided challenge ID.
+ * 4. Adds the challenger to the challenge.
+ * 5. Returns a success response if all steps are completed successfully.
+ * 6. Returns an error response if any step fails.
+ */
 export const POST = async (req: Request) => {
   try {
     const requestUrl = new URL(req.url);
-    const { truth1, truth2, lie, competitors, amount } =
-      validatedCreateChallengeQueryParams(requestUrl);
+    const { guess, bet, challengeId } =
+      validatedPOSTChallengeQueryParams(requestUrl);
     const body: NextActionPostRequest = await req.json();
 
     // Validate the client-provided input
@@ -57,42 +72,36 @@ export const POST = async (req: Request) => {
       throw 'Invalid "signature" provided';
     }
 
-    console.log(
-      `Creating challenge with truth1: ${truth1}, truth2: ${truth2}, lie: ${lie}, competitors: ${competitors}, amount: ${amount} and signature: ${signature}, account: ${account.toBase58()}`
-    );
-
-    // Create user if not exists
+    let challenge;
     try {
-      await createUserIfNotExists(account.toBase58(), "User");
+      challenge = await getChallenge(challengeId);
     } catch (err) {
-      throw "Failed to create user";
+      console.error("Error fetching challenge:", err);
+      const actionError: ActionError = { message: "Failed to fetch challenge" };
+      return Response.json(actionError, { status: 500, headers });
     }
-
-    const statements = [truth1, truth2, lie];
-    const shuffledStatements = shuffleArray(statements);
-    const lieIndex = shuffledStatements.indexOf(lie);
-
-    // Create challenge
-    let challengeId: string;
+    if (!challenge) {
+      const actionError: ActionError = { message: "Challenge not found" };
+      return Response.json(actionError, { status: 404, headers });
+    }
     try {
-      challengeId = await createChallenge(
+      await addChallenger(
+        challengeId,
         account.toBase58(),
-        competitors,
-        shuffledStatements,
-        lieIndex,
-        amount
+        signature,
+        challenge.lieIndex === guess
       );
     } catch (err) {
-      console.error(err);
-      throw "Failed to create challenge";
+      console.error("Error adding challenger:", err);
+      const actionError: ActionError = { message: "Failed to add challenger" };
+      return Response.json(actionError, { status: 500, headers });
     }
-
     const payload: CompletedAction = {
       type: "completed",
-      title: "Challenge created",
-      description: `Your challenge has been created successfully\n URL: https://dial.to/developer?url=${requestUrl.origin}/challenge?challengeId=${challengeId}`,
+      title: "Challenge Accepted",
+      description: `You have successfully accepted the challenge by ${challenge.wallet}`,
       icon: new URL("/logo.png", requestUrl.origin).toString(),
-      label: "Challenge created",
+      label: "Challenge Accepted",
     };
 
     return Response.json(payload, { headers });

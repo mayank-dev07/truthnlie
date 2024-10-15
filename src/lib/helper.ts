@@ -90,6 +90,56 @@ export function validatedChallengeQueryParams(requestUrl: URL) {
 }
 
 /**
+ * Validates and extracts the query parameters from a POST challenge request URL.
+ *
+ * @param {URL} requestUrl - The URL object containing the query parameters.
+ * @returns {{ guess: number, bet: string, challengeId: string }} An object containing the validated `guess`, `bet`, and `challengeId` parameters.
+ * @throws Will throw an error if any of the required query parameters are missing or invalid.
+ *
+ * The function performs the following validations:
+ * - `challengeId` must be present.
+ * - `guess` must be a number between 0 and 2.
+ * - `bet` must be present.
+ */
+export function validatedPOSTChallengeQueryParams(requestUrl: URL): {
+  guess: number;
+  bet: string;
+  challengeId: string;
+} {
+  let guess: number;
+  let bet: string;
+  let challengeId: string;
+
+  try {
+    challengeId = requestUrl.searchParams.get("challengeId")!;
+    if (!challengeId) throw "challengeId is required";
+  } catch (err) {
+    throw "Invalid input query parameter: challengeId";
+  }
+
+  try {
+    guess = parseInt(requestUrl.searchParams.get("guess")!);
+    if (isNaN(guess) || guess < 0 || guess > 2)
+      throw "guess should be a number between 0 and 2";
+  } catch (err) {
+    throw "Invalid input query parameter: guess";
+  }
+
+  try {
+    bet = requestUrl.searchParams.get("bet")!;
+    if (!bet) throw "bet is required";
+  } catch (err) {
+    throw "Invalid input query parameter: bet";
+  }
+
+  return {
+    guess,
+    bet,
+    challengeId,
+  };
+}
+
+/**
  * Shuffles an array of strings in place using the Fisher-Yates algorithm.
  *
  * @param array - The array of strings to shuffle.

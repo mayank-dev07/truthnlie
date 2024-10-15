@@ -35,7 +35,7 @@ export async function getUser(wallet: string) {
 }
 
 /**
- * Creates a challenge with the specified parameters.
+ * Creates a new challenge with the specified parameters.
  * @param wallet - The wallet address of the user creating the challenge.
  * @param maxChallengers - The maximum number of challengers allowed.
  * @param statements - An array of three statements.
@@ -47,7 +47,8 @@ export async function createChallenge(
   wallet: string,
   maxChallengers: number,
   statements: string[],
-  lieIndex: number
+  lieIndex: number,
+  totalAmount: number
 ) {
   // validations
   if (statements.length !== 3) {
@@ -62,7 +63,7 @@ export async function createChallenge(
   });
 
   if (!existingWallet) {
-    throw new Error("Wallet not found");
+    await createNewUser(wallet, "User");
   }
 
   const challenge = await db.challenge.create({
@@ -71,9 +72,25 @@ export async function createChallenge(
       maxChallengers,
       statements,
       lieIndex,
+      totalAmount,
     },
   });
   return challenge.id;
+}
+
+/**
+ * Creates a new user in the database without any checks.
+ * @param wallet - The wallet address of the user.
+ * @param name - The name of the user.
+ * @returns The newly created user.
+ */
+export async function createNewUser(wallet: string, name: string) {
+  return db.user.create({
+    data: {
+      wallet,
+      name,
+    },
+  });
 }
 
 /**
@@ -133,6 +150,13 @@ export async function addChallenger(
   guessSignature: string,
   correct: boolean
 ) {
+  const existingWallet = await db.user.findUnique({
+    where: { wallet },
+  });
+
+  if (!existingWallet) {
+    await createNewUser(wallet, "User");
+  }
   return db.challenge.update({
     where: {
       id: challengeId,

@@ -24,6 +24,7 @@ model Challenge {
     challengers      User[]    @relation("ReceivedChallenges")
     statements       String[]
     lieIndex         Int
+    totalAmount      Float
     correctGuesses   String[]  @default([])
     incorrectGuesses String[]  @default([])
     createdAt        DateTime  @default(now())
