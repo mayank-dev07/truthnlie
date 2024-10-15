@@ -1,5 +1,6 @@
 import { addChallenger, getChallenge } from "@/lib/dbUtils";
 import { validatedPOSTChallengeQueryParams } from "@/lib/helper";
+import { sendPayouts } from "@/lib/payout.helper";
 import {
   createActionHeaders,
   ActionError,
@@ -91,6 +92,25 @@ export const POST = async (req: Request) => {
         signature,
         challenge.lieIndex === guess
       );
+
+      if (
+        challenge.maxChallengers ===
+        challenge.correctGuessesSig.length +
+          challenge.incorrectGuessesSig.length +
+          1
+      ) {
+        console.log("Sending Payouts");
+        
+        // Run sendPayouts asynchronously in the background
+        sendPayouts(challengeId)
+          .then(() => {
+            console.log("Payouts sent successfully");
+          })
+          .catch((err) => {
+            console.error("Error sending payouts:", err);
+          });
+        console.log("Payouts scheduled");
+      }
     } catch (err) {
       console.error("Error adding challenger:", err);
       const actionError: ActionError = { message: "Failed to add challenger" };
