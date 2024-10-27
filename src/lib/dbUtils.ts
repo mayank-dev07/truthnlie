@@ -225,3 +225,7 @@ export function updateTransaction(
     },
   });
 }
+
+export function getAllChallenges() {
+  return db.challenge.findMany();
+}

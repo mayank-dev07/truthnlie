@@ -1,17 +1,23 @@
 import {
-  Connection,
   clusterApiUrl,
-  SystemProgram,
-  LAMPORTS_PER_SOL,
+  Connection,
   Keypair,
+  LAMPORTS_PER_SOL,
   PublicKey,
-  Transaction,
   sendAndConfirmTransaction,
+  SystemProgram,
+  Transaction,
 } from "@solana/web3.js";
+import { db } from "./db";
+import wallet from "../keys/AkS5coPHbYjv5k9ZvDucWodQhPmn2f9NjRzoTBQjABGh.json";
 
-import wallet from "../../keys/AkS5coPHbYjv5k9ZvDucWodQhPmn2f9NjRzoTBQjABGh.json";
-import { getChallenge, initTransaction, updateTransaction } from "./dbUtils";
-import { platformFee } from "./constants";
+export async function getChallenge(id: string) {
+  return db.challenge.findUnique({
+    where: {
+      id,
+    },
+  });
+}
 
 export async function getTransactionDetails(signature: string) {
   // Connect to Solana cluster
@@ -140,10 +146,6 @@ async function transferSol(
     `Transfer instruction successful.\nSender:${sender.publicKey.toString()}\nReceiver:${receiver.toString()}\nAmount:${amount}\nSignature:${signature}`
   );
   return signature;
-  console.log(
-    `Transfer instruction successful.\nSender:${sender.publicKey.toString()}\nReceiver:${receiver.toString()}\nAmount:${amount}\nSignature:${signature}`
-  );
-  return signature;
 }
 
 export async function transferSolWithKeypair(
@@ -156,79 +158,56 @@ export async function transferSolWithKeypair(
   return transferSol(sender, receiver, amount, challengeId);
 }
 
-export async function sendPayouts(challengeId: string) {
-  const connection = new Connection(clusterApiUrl("devnet"));
+export function initTransaction(
+  challengeId: string,
+  sender: string,
+  receiver: string,
+  amount: number
+) {
+  return db.transaction.create({
+    data: {
+      challengeId,
+      ToUser: sender,
+      TxHash: "",
+      FromUser: receiver,
+      TokenAmount: amount,
+      Token: "SOL",
+      TxState: "Pending",
+      Timestamp: 0,
+    },
+  });
+}
 
-  let payerPublicKey: PublicKey;
-  try {
-    const payerKeypair = Keypair.fromSecretKey(new Uint8Array(wallet)); // 'wallet' must be a valid Uint8Array secret key
-    payerPublicKey = payerKeypair.publicKey;
-  } catch (err) {
-    if (err instanceof Error) {
-      throw new Error(`Invalid payer public key: ${err.message}`);
-    } else {
-      throw new Error("Invalid payer public key: Unknown error");
-    }
-  }
+export function updateTransaction(
+  txid: number,
+  txHash: string,
+  timestamp: number
+) {
+  return db.transaction.update({
+    where: {
+      TxID: txid,
+    },
+    data: {
+      TxHash: txHash,
+      TxState: "Confirmed",
+      Timestamp: timestamp,
+    },
+  });
+}
 
-  let challenge;
-  try {
-    challenge = await getChallenge(challengeId);
-  } catch (err) {
-    console.error("Error fetching challenge:", err);
-    throw `Error fetching challenge: ${err}`;
-  }
-  if (!challenge) {
-    throw `No Challenge with ID ${challengeId} found!`;
-  }
-  for (const winnerSig of challenge?.correctGuessesSig) {
-    const { sender, receiver, amount } = await getTransactionDetails(winnerSig);
-    if (receiver != payerPublicKey.toString()) {
-      throw "Wrong vault account";
-    }
-    if (amount == 1) {
-      const transferAmount =
-        (challenge.totalAmount / challenge.maxChallengers) * (1 - platformFee);
-      return await transferSolWithKeypair(
-        new PublicKey(challenge.wallet),
-        transferAmount,
-        challengeId
-      );
-    }
+// Helper function for fetching challenges
+export function getAllChallenges() {
+  return db.challenge.findMany();
+}
 
-    const transferAmount = amount * 2 * (1 - platformFee);
-    console.log(
-      `Sending ${transferAmount} to winner ${sender} for challenge ${challengeId}`
-    );
-    return await transferSolWithKeypair(
-      new PublicKey(sender),
-      transferAmount,
-      challengeId
-    );
-  }
-
-  for (const loserSig of challenge?.correctGuessesSig) {
-    const { sender, receiver, amount } = await getTransactionDetails(loserSig);
-    if (receiver != payerPublicKey.toString()) {
-      throw "Wrong vault account";
-    }
-    if (amount == 1) {
-      const transferAmount =
-        (challenge.totalAmount / challenge.maxChallengers) * (1 - platformFee);
-      return await transferSolWithKeypair(
-        new PublicKey(challenge.wallet),
-        transferAmount,
-        challengeId
-      );
-    }
-    const transferAmount = amount * 2 * (1 - platformFee);
-    console.log(
-      `Sending ${transferAmount} to winner ${challenge.wallet} for challenge ${challengeId} as challenger ${sender} lost!`
-    );
-    await transferSolWithKeypair(
-      new PublicKey(challenge.wallet),
-      transferAmount,
-      challengeId
-    );
-  }
+export function markChallengeAsCompleted(challengeId: string) {
+  console.log(`Marking challenge ${challengeId} as completed...`);
+  return db.challenge.update({
+    where: {
+      id: challengeId,
+    },
+    data: {
+      completedAt: new Date(),
+    },
+  });
 }
